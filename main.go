@@ -24,6 +24,7 @@ var (
 	// Flags
 	dbPath    string
 	ollamaURL string
+	apiKey    string
 	modelName string
 	embedDim  int
 
@@ -64,7 +65,7 @@ func getEmbedder() (llm.Embedder, error) {
 		return llm.NewLocalClient(globalConfig.LocalModelPath, globalConfig.LocalLibPath, globalConfig.EmbedDimensions)
 	}
 	// Pass the target dimension
-	return llm.NewHTTPClient(globalConfig.OllamaURL, globalConfig.ModelName, globalConfig.EmbedDimensions), nil
+	return llm.NewHTTPClient(globalConfig.OllamaURL, globalConfig.ModelName, globalConfig.EmbedDimensions, globalConfig.APIKey), nil
 }
 
 func generateEmbeddings() {
@@ -190,6 +191,11 @@ func main() {
 				} else {
 					fmt.Println("Mode:             Ollama Server")
 					fmt.Printf("Ollama URL:       %s\n", globalConfig.OllamaURL)
+					if globalConfig.APIKey != "" {
+						fmt.Println("Auth:             OpenAI-compatible (/v1/embeddings + Bearer, API key set)")
+					} else {
+						fmt.Println("Auth:             Ollama native (/api/embeddings, no auth)")
+					}
 				}
 			} else {
 				fmt.Println("Embedding:        Not configured (run 'qmd embed' to setup)")
@@ -323,6 +329,9 @@ func main() {
 			if cmd.Flags().Changed("url") {
 				globalConfig.OllamaURL = ollamaURL
 			}
+			if cmd.Flags().Changed("api-key") {
+				globalConfig.APIKey = apiKey
+			}
 			if cmd.Flags().Changed("model") {
 				globalConfig.ModelName = modelName
 			}
@@ -363,7 +372,8 @@ func main() {
 	}
 
 	// Attach embedding-specific flags only to embed command
-	cmdEmbed.Flags().StringVar(&ollamaURL, "url", "", "Ollama API URL")
+	cmdEmbed.Flags().StringVar(&ollamaURL, "url", "", "Ollama API URL (or OpenAI-compatible base URL, e.g. a LiteLLM proxy, when --api-key is set)")
+	cmdEmbed.Flags().StringVar(&apiKey, "api-key", "", "API key for OpenAI-compatible embeddings endpoint (e.g. LiteLLM proxy). When set, uses /v1/embeddings + Bearer auth instead of Ollama's native /api/embeddings")
 	cmdEmbed.Flags().StringVar(&modelName, "model", "", "Embedding model name")
 	cmdEmbed.Flags().IntVar(&embedDim, "dim", 0, "Embedding vector dimensions")
 	cmdEmbed.Flags().BoolVar(&localMode, "local", false, "Use local llama.cpp inference")

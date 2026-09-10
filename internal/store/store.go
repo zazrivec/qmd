@@ -162,6 +162,9 @@ func (s *Store) LoadConfig() (*config.Config, error) {
 	if v, ok := kv["ollama_url"]; ok {
 		cfg.OllamaURL = v
 	}
+	if v, ok := kv["api_key"]; ok {
+		cfg.APIKey = v
+	}
 	if v, ok := kv["model_name"]; ok {
 		cfg.ModelName = v
 	}
@@ -241,6 +244,9 @@ func (s *Store) SaveConfig(cfg *config.Config) error {
 
 	if cfg.EmbeddingsConfigured {
 		if err := upsert("ollama_url", cfg.OllamaURL); err != nil {
+			return err
+		}
+		if err := upsert("api_key", cfg.APIKey); err != nil {
 			return err
 		}
 		if err := upsert("model_name", cfg.ModelName); err != nil {

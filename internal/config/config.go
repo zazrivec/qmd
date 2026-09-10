@@ -10,7 +10,12 @@ type Collection struct {
 
 type Config struct {
 	// LLM / Embedding Settings
-	OllamaURL       string `json:"ollama_url"`
+	OllamaURL string `json:"ollama_url"`
+	// APIKey, when set, switches the embedding client to the
+	// OpenAI-compatible /v1/embeddings endpoint (Authorization: Bearer)
+	// instead of Ollama's native /api/embeddings — needed to talk to a
+	// LiteLLM proxy (or any other OpenAI-compatible embeddings backend).
+	APIKey          string `json:"api_key"`
 	ModelName       string `json:"model_name"`
 	EmbedDimensions int    `json:"embed_dimensions"`
 

@@ -1,0 +1,7 @@
+.DS_Store
+internal/.DS_Store
+/qmd
+qmd.sqlite
+qmd.sqlite-shm
+qmd.sqlite-wal
+debug.log
