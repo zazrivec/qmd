@@ -29,9 +29,7 @@ jobs:
             allow_failure: false
           - os: windows-latest
             asset_name: qmd-windows-amd64.exe
-            # Best-effort until proven green over a couple of runs, then
-            # flip to false.
-            allow_failure: true
+            allow_failure: false
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.allow_failure }}
     steps:
