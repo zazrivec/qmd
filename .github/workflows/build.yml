@@ -19,6 +19,14 @@ jobs:
           - os: macos-latest
             asset_name: qmd-darwin-arm64
             allow_failure: false
+          - os: macos-latest
+            asset_name: qmd-darwin-amd64
+            goarch: amd64
+            # Cross-compiled from the arm64 runner: Xcode's clang ships both
+            # arch slices, so `-arch x86_64` builds a real Intel binary
+            # without needing a (now largely retired) Intel macOS runner.
+            cc: "clang -arch x86_64"
+            allow_failure: false
           - os: windows-latest
             asset_name: qmd-windows-amd64.exe
             # cgo needs a full sqlite3 dev toolchain (headers + import lib) on
@@ -52,6 +60,8 @@ jobs:
         shell: bash
         env:
           CGO_ENABLED: "1"
+          GOARCH: ${{ matrix.goarch }}
+          CC: ${{ matrix.cc }}
         run: |
           mkdir -p dist
           go build -tags sqlite_fts5 -o "dist/${{ matrix.asset_name }}" .
