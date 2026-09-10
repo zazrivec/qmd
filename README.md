@@ -28,9 +28,21 @@ Some opinionated differences with the original, make it a bit different, mainly 
 ## Embeddings
 Using embeddings is optional, qmd will default to SQLite FTS5 BM25 by default.
  
-### Embeddings Option A: Ollama 
+### Embeddings Option A: Ollama (native) or an OpenAI-compatible endpoint
 
-Install and run **[Ollama](https://ollama.com/)**.
+Install and run **[Ollama](https://ollama.com/)** — `qmd` talks to it via its native `/api/embeddings` route by default, no API key needed.
+
+`qmd` can also talk to any **OpenAI-compatible** embeddings endpoint (for example a [LiteLLM](https://www.litellm.ai/) proxy sitting in front of one or more Ollama servers) via `/v1/embeddings` instead. This is useful when you want load balancing/routing across multiple backends, or when a bare Ollama server isn't directly reachable. Pass `--api-key` to `qmd embed` to switch: when it's set, `--url` is treated as an OpenAI-compatible base URL and requests are sent with `Authorization: Bearer <key>`; when it's empty (the default), behavior is unchanged and `--url` is treated as a plain Ollama server. See [Embeddings Option A2](#embeddings-option-a2-openai-compatible--litellm) below for a worked example.
+
+### Embeddings Option A2: OpenAI-compatible / LiteLLM
+
+Point `qmd` at a LiteLLM proxy (or any other OpenAI-compatible embeddings API) instead of a bare Ollama server:
+
+```bash
+qmd embed --url https://your-litellm-proxy.example.com --api-key sk-your-key --model bge-m3:latest --dim 1024
+```
+
+Note the endpoint shapes differ: Ollama's native API is `POST {url}/api/embeddings` (no auth), OpenAI-compatible is `POST {url}/v1/embeddings` (`Authorization: Bearer <key>`). `qmd` picks the right one for you based on whether `--api-key` is set — you never need to include `/api/embeddings` or `/v1/embeddings` in `--url` yourself.
 
 ### Embeddings Option B: Local Inference (Recommended for performance/control)
 
@@ -103,6 +115,11 @@ qmd embed --local --model-path /opt/ml/nomic-embed-text-v1.5.Q8_0.gguf --lib-pat
 qmd embed --url http://localhost:11434 --model nomic-embed-text
 ```
 
+**Or using an OpenAI-compatible endpoint (e.g. LiteLLM):**
+```bash
+qmd embed --url https://your-litellm-proxy.example.com --api-key sk-your-key --model bge-m3:latest --dim 1024
+```
+
 ### 4. Search
 
 **Semantic Search (Vector only):**
@@ -161,7 +178,8 @@ Configures embedding settings and generates vectors for pending documents.
     - `--local`: Enable local llama.cpp mode.
     - `--model-path`: Path to GGUF model (Local).
     - `--lib-path`: Path to llama.cpp library (Local). Can also use `YZMA_LIB` env var.
-    - `--url`: Ollama URL (Default `http://localhost:11434`).
+    - `--url`: Ollama URL, or an OpenAI-compatible base URL when `--api-key` is set (Default `http://localhost:11434`).
+    - `--api-key`: API key for an OpenAI-compatible embeddings endpoint (e.g. a LiteLLM proxy). When set, requests go to `{url}/v1/embeddings` with `Authorization: Bearer <key>` instead of Ollama's native `{url}/api/embeddings`. Empty by default — no behavior change unless you opt in.
     - `--model`: Model name (Default `nomic-embed-text`).
     - `--dim`: Vector dimensions (Default `768`).
 
