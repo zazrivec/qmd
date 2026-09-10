@@ -29,9 +29,8 @@ jobs:
             allow_failure: false
           - os: windows-latest
             asset_name: qmd-windows-amd64.exe
-            # cgo needs a full sqlite3 dev toolchain (headers + import lib) on
-            # MinGW, which isn't reliably available via a one-line package
-            # install — best-effort only, doesn't gate the workflow.
+            # Best-effort until proven green over a couple of runs, then
+            # flip to false.
             allow_failure: true
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.allow_failure }}
@@ -50,9 +49,20 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev libx11-dev
 
-      - name: Install native build dependencies (Windows)
+      # sqlite-vec-go-bindings's cgo file only needs the sqlite3.h header at
+      # compile time (`#cgo CFLAGS: -DSQLITE_CORE`, no `-lsqlite3`) — the
+      # actual symbols resolve against mattn/go-sqlite3's bundled amalgamation
+      # at link time, so a bare header (no built library) is enough. Grab it
+      # straight from sqlite.org instead of a full vcpkg/MinGW dev toolchain.
+      - name: Install sqlite3.h (Windows)
         if: runner.os == 'Windows'
-        run: choco install sqlite --params "/NoTools" -y
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip" -OutFile sqlite-amalgamation.zip
+          Expand-Archive -Path sqlite-amalgamation.zip -DestinationPath .
+          $dir = Get-ChildItem -Directory -Filter "sqlite-amalgamation-*" | Select-Object -First 1
+          echo "CGO_CFLAGS=-I$($dir.FullName)" >> $env:GITHUB_ENV
 
       # sqlite-vec-go-bindings and mattn/go-sqlite3 use cgo; each OS builds
       # natively (no cross-compilation) so the platform C toolchain is used.
